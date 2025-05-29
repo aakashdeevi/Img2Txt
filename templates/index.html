@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Img2Txt</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              100: '#d1d5db',
+              200: '#9ca3af',
+              300: '#6b7280',
+              400: '#4b5563',
+              500: '#374151',
+              600: '#1f2937',
+              700: '#111827',
+              800: '#0f172a',
+              900: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-b from-white to-purple-50 dark:from-dark-800 dark:to-dark-900 text-center text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- Dark Mode Toggle -->
+  <div class="absolute top-4 right-4">
+    <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-dark-600">
+      <span id="darkIcon" class="hidden">🌙</span>
+      <span id="lightIcon">☀️</span>
+    </button>
+  </div>
+
+  <div class="container mx-auto px-4 py-10">
+    <div class="text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg leading-tight py-2">Img2Txt</div>
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Extract text from images instantly with powerful OCR technology.</p>
+
+    <!-- Tabs -->
+    <div class="flex justify-center bg-gray-100 dark:bg-dark-600 rounded-full p-1 w-fit mx-auto mb-8">
+      <button onclick="switchTab('uploadTab')" id="uploadTabBtn" class="px-6 py-2 rounded-full font-medium text-sm bg-white dark:bg-dark-700 text-black dark:text-white shadow transition-all">📤 Upload Options</button>
+      <button onclick="switchTab('resultsTab')" id="resultsTabBtn" class="px-6 py-2 rounded-full font-medium text-sm text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-all">📄 View Results</button>
+    </div>
+
+    <!-- Upload Tab -->
+    <div id="uploadTab" class="block">
+      <div class="max-w-3xl mx-auto">
+        <!-- Option 1: Local Image Upload -->
+        <div class="bg-white dark:bg-dark-700 p-6 rounded-xl shadow mb-6">
+          <h3 class="text-xl font-semibold mb-4">Upload Local Image</h3>
+          <form id="imageUploadForm" action="/upload_image" method="post" enctype="multipart/form-data" class="flex flex-col items-center">
+            <div class="upload-box border-2 border-dashed border-gray-300 dark:border-dark-500 bg-gray-50 dark:bg-dark-600 p-6 rounded-xl cursor-pointer w-full mb-4 text-center" onclick="document.getElementById('imageInput').click()">
+              <div id="imageUploadIcon" class="text-4xl mb-2">🖼️</div>
+              <p id="imageUploadText">Click to select image file</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">JPG, PNG, GIF, BMP, etc.</p>
+              <img id="imagePreview" class="hidden max-h-64 mx-auto mt-4 rounded" />
+            </div>
+            <input type="file" name="image_file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+            <button type="submit" id="imageSubmitBtn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all hidden">
+              Extract Text
+            </button>
+            <!-- Progress bar for image upload -->
+            <div id="imageProgressContainer" class="w-full mt-2 hidden">
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Processing...</span>
+                <span id="imageProgressPercent">0%</span>
+              </div>
+              <div class="w-full h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
+                <div id="imageProgressBar" class="h-full bg-purple-600 transition-all duration-300 ease-out" style="width: 0%"></div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- OR Divider -->
+        <div class="flex items-center my-6">
+          <div class="flex-1 border-t border-gray-300 dark:border-dark-500"></div>
+          <div class="px-4 text-gray-500 dark:text-gray-400 font-medium">OR</div>
+          <div class="flex-1 border-t border-gray-300 dark:border-dark-500"></div>
+        </div>
+
+        <!-- Option 2: Combined URL and Excel -->
+        <div class="bg-white dark:bg-dark-700 p-6 rounded-xl shadow">
+          <h3 class="text-xl font-semibold mb-4">Alternative Input Methods</h3>
+          
+          <!-- Tabs for URL/Excel -->
+          <div class="flex mb-6 bg-gray-100 dark:bg-dark-600 rounded-lg p-1">
+            <button onclick="switchInputMethod('urlTab')" id="urlTabBtn" class="flex-1 py-2 rounded-lg font-medium text-sm bg-white dark:bg-dark-700 text-black dark:text-white shadow transition-all">Image URL</button>
+            <button onclick="switchInputMethod('excelTab')" id="excelTabBtn" class="flex-1 py-2 rounded-lg font-medium text-sm text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-all">Excel Sheet</button>
+          </div>
+
+          <!-- URL Input -->
+          <div id="urlTab" class="block">
+            <form id="urlUploadForm" action="/upload_url" method="post" class="flex flex-col gap-4">
+              <input type="text" name="image_url" placeholder="Enter Image URL" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-600 dark:border-dark-500">
+              <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all">
+                Extract from URL
+              </button>
+              <!-- Progress bar for URL upload -->
+              <div id="urlProgressContainer" class="w-full mt-2 hidden">
+                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>Processing...</span>
+                  <span id="urlProgressPercent">0%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
+                  <div id="urlProgressBar" class="h-full bg-purple-600 transition-all duration-300 ease-out" style="width: 0%"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Excel Input -->
+          <div id="excelTab" class="hidden">
+            <form id="excelUploadForm" action="/upload_excel" method="post" enctype="multipart/form-data" class="flex flex-col items-center">
+              <div class="upload-box border-2 border-dashed border-gray-300 dark:border-dark-500 bg-gray-50 dark:bg-dark-600 p-6 rounded-xl cursor-pointer w-full mb-4 text-center" onclick="document.getElementById('excelInput').click()">
+                <div class="text-4xl mb-2">📊</div>
+                <p id="excelUploadText" class="text-gray-500 dark:text-gray-400">Click to select Excel file</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">(Must contain 'Image_URL' column)</p>
+              </div>
+              <input type="file" name="excel_file" id="excelInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelSelect(event)">
+              <button type="submit" id="excelSubmitBtn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all hidden">
+                Process Excel
+              </button>
+              <!-- Progress bar for Excel upload -->
+              <div id="excelProgressContainer" class="w-full mt-2 hidden">
+                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>Processing...</span>
+                  <span id="excelProgressPercent">0%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
+                  <div id="excelProgressBar" class="h-full bg-purple-600 transition-all duration-300 ease-out" style="width: 0%"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Tab -->
+    <div id="resultsTab" class="hidden">
+      {% if corrected_text %}
+        <div class="max-w-4xl mx-auto bg-white dark:bg-dark-700 p-6 rounded-xl shadow">
+          <h3 class="text-xl font-semibold mb-4">Extracted Text:</h3>
+          <div class="relative">
+            <textarea id="ocrText" readonly rows="10" class="w-full p-4 border rounded-lg resize-y bg-gray-50 dark:bg-dark-600 dark:border-dark-500">{{ corrected_text }}</textarea>
+            <button type="button" onclick="copyText()" class="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-all">Copy</button>
+          </div>
+        </div>
+      {% else %}
+        <p class="text-gray-500 dark:text-gray-400">No text extracted yet. Upload an image to begin.</p>
+      {% endif %}
+    </div>
+
+    <div class="features mt-12 flex flex-wrap justify-center gap-6">
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">🖼️</div>
+        <h3 class="text-lg font-semibold">Local Images</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Upload images directly from your device.</p>
+      </div>
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">🔗</div>
+        <h3 class="text-lg font-semibold">Web Images</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Extract text from online images.</p>
+      </div>
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">📊</div>
+        <h3 class="text-lg font-semibold">Batch Processing</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Process multiple images via Excel.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkIcon');
+    const lightIcon = document.getElementById('lightIcon');
+    
+    if (localStorage.getItem('darkMode') === 'enabled') {
+      document.documentElement.classList.add('dark');
+      darkIcon.classList.remove('hidden');
+      lightIcon.classList.add('hidden');
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      
+      if (document.documentElement.classList.contains('dark')) {
+        localStorage.setItem('darkMode', 'enabled');
+        darkIcon.classList.remove('hidden');
+        lightIcon.classList.add('hidden');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+        darkIcon.classList.add('hidden');
+        lightIcon.classList.remove('hidden');
+      }
+    });
+
+    // Progress bar functions for each form
+    function showProgress(formType) {
+      const container = document.getElementById(`${formType}ProgressContainer`);
+      const bar = document.getElementById(`${formType}ProgressBar`);
+      const percent = document.getElementById(`${formType}ProgressPercent`);
+      
+      container.classList.remove('hidden');
+      bar.style.width = '0%';
+      percent.textContent = '0%';
+    }
+
+    function updateProgress(formType, percentage) {
+      const bar = document.getElementById(`${formType}ProgressBar`);
+      const percent = document.getElementById(`${formType}ProgressPercent`);
+      
+      bar.style.width = `${percentage}%`;
+      percent.textContent = `${Math.round(percentage)}%`;
+    }
+
+    function hideProgress(formType) {
+      const container = document.getElementById(`${formType}ProgressContainer`);
+      const bar = document.getElementById(`${formType}ProgressBar`);
+      
+      bar.style.width = '100%';
+      setTimeout(() => {
+        container.classList.add('hidden');
+      }, 500);
+    }
+
+    // Form submission with progress
+    function setupFormWithProgress(formId, formType) {
+      const form = document.getElementById(formId);
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          showProgress(formType);
+          
+          // Simulate progress (in a real app, you'd use XMLHttpRequest or fetch with progress events)
+          let progress = 0;
+          const progressInterval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 90) clearInterval(progressInterval);
+            updateProgress(formType, progress);
+          }, 200);
+          
+          // In a real implementation, you would use:
+          /*
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+              const percentComplete = (e.loaded / e.total) * 100;
+              updateProgress(formType, percentComplete);
+            }
+          });
+          xhr.addEventListener('load', function() {
+            hideProgress(formType);
+            // Handle response
+          });
+          xhr.open('POST', form.action);
+          xhr.send(new FormData(form));
+          e.preventDefault();
+          */
+        });
+      }
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imagePreview = document.getElementById('imagePreview');
+          imagePreview.src = e.target.result;
+          imagePreview.classList.remove('hidden');
+          
+          // Update upload box
+          document.getElementById('imageUploadIcon').classList.add('hidden');
+          document.getElementById('imageUploadText').textContent = file.name;
+          
+          // Show submit button
+          document.getElementById('imageSubmitBtn').classList.remove('hidden');
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleExcelSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Update upload box
+        document.getElementById('excelUploadText').textContent = file.name;
+        
+        // Show submit button
+        document.getElementById('excelSubmitBtn').classList.remove('hidden');
+      }
+    }
+
+    function switchTab(tabId) {
+      document.getElementById('uploadTab').classList.add('hidden');
+      document.getElementById('resultsTab').classList.add('hidden');
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.getElementById('uploadTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+      document.getElementById('resultsTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+
+      if (tabId === 'uploadTab') {
+        document.getElementById('uploadTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('resultsTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      } else {
+        document.getElementById('resultsTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('uploadTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      }
+    }
+
+    function switchInputMethod(methodId) {
+      document.getElementById('urlTab').classList.add('hidden');
+      document.getElementById('excelTab').classList.add('hidden');
+      document.getElementById(methodId).classList.remove('hidden');
+
+      document.getElementById('urlTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+      document.getElementById('excelTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+
+      if (methodId === 'urlTab') {
+        document.getElementById('urlTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('excelTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      } else {
+        document.getElementById('excelTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('urlTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      }
+    }
+
+    function copyText() {
+      const textArea = document.getElementById("ocrText");
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      
+      // Show a nice toast notification
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg';
+      toast.textContent = 'Text copied to clipboard!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    // Initialize form progress handlers
+    document.addEventListener('DOMContentLoaded', function() {
+      setupFormWithProgress('imageUploadForm', 'image');
+      setupFormWithProgress('urlUploadForm', 'url');
+      setupFormWithProgress('excelUploadForm', 'excel');
+      
+      const ocrTextArea = document.getElementById('ocrText');
+      if (ocrTextArea && ocrTextArea.value.trim() !== "") {
+        switchTab('resultsTab');
+      } else {
+        switchTab('uploadTab');
+      }
+    });
+  </script>
+</body>
+</html>
