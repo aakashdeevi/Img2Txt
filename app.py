@@ -18,7 +18,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # LanguageTool instance
-tool = language_tool_python.LanguageTool('en-US')
+tool = language_tool_python.LanguageToolPublicAPI('en-US')
 
 # OCR function using OCR.space
 def ocr_space_extract(image_path, api_key=API_KEY):
