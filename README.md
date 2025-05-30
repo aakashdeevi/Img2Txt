@@ -1,4 +1,4 @@
-# 🖼 Img2Txt - OCR Image to Text Converter
+#  Img2Txt - OCR Image to Text Converter
 
 **Img2Txt** is a powerful web application that extracts text from images using Optical Character Recognition (OCR) technology. It supports multiple input methods including direct image uploads, image URLs, and batch processing via Excel files, with built-in grammar correction for extracted text.
 
