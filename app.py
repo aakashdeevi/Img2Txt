@@ -9,7 +9,7 @@ from io import BytesIO
 import tempfile
 
 # Constants
-API_KEY = 'K87266024688957'
+API_KEY = 'K83869770388957'
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
